@@ -18,15 +18,20 @@ using namespace glm;
 // todo:: recode JointNode using theta
 // d
 struct JointNode {
+
     int id;
+
+    float theta;
+    float length;
+
+
     vec2 origin;
     vec2 destination;
 
     JointNode(int id, vec2 ori, vec2 des) : id(id), origin(ori), destination(des) {};
 
-    float getDis() {
-        return global::getDis(destination, origin);
-    }
+    JointNode(int id, float length, float theta) : id(id), length(length), theta(theta) {};
+    
 };
 
 // 不同的算法只是下标顺序的不同
@@ -92,7 +97,7 @@ private:
 
     void rotateJoints(int ori_idx, float rotate_angle);
 
-    bool updateSingleJoint(int origin_index, float & rotate_angle);
+    bool updateSingleJoint(int origin_index, float &rotate_angle);
 
     vector<float> getCDF(int index);
 

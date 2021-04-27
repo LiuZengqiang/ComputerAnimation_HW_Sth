@@ -26,37 +26,12 @@ vector<vec2> targets = {
         vec2(-100, -100),
         vec2(-100, 100)
 };
-//vector<vec2> targets = {
-////        vec2(0, 100),
-//        vec2(100, 100),
-//        vec2(100, 150),
-//        vec2(100, 200),
-//        vec2(100, 250),
-//        vec2(100, 300),
-//        vec2(100, 250),
-//        vec2(100, 200),
-//        vec2(100, 150)
-//};
-//vector<vec2> targets = {
-////        vec2(0, 100),
-//        vec2(50, 100),
-//        vec2(100, -100),
-//        vec2(150, -100),
-//        vec2(200, 100),
-//        vec2(0, 100),
-//        vec2(100, 0)
-//};
 int index = 0;
 
 // 点位置数据
 float *data;
 int data_cnt = 4;
-float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left
-        0.5f, -0.5f, 0.0f, // right
-        0.0f, 0.5f, 0.0f,  // top
-        0.0f, 0.0f, 0.0f
-};
+
 Joint joint(joint_vec, SCR_WIDTH, SCR_HEIGHT);
 
 // frame buffer刷新回调函数
@@ -228,10 +203,10 @@ void cursorPositionCallback(GLFWwindow *window, double x, double y) {
     target = vec2(x - SCR_WIDTH / 2, -1 * (y - SCR_HEIGHT / 2));
     cout << "target:(" << target.x << "," << target.y << ")" << endl;
     joint.setTarget(target);
-//    joint.updateJointsCCD();
+    joint.updateJointsCCD();
 //    joint.updateJointsRCCD();
 //    joint.updateJointsCC();
-    joint.updateJointsMCD();
+//    joint.updateJointsMCD();
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
