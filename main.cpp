@@ -18,25 +18,34 @@ double cursor_pos_y = 0;
 
 vec2 target(0, 300);
 
-vector<float> joint_vec = {100, 100, 100};
+vector<float> joint_vec = {100, 100, 50, 50};
+vector<vec2> targets = {
+        vec2(0, 200),
+        vec2(100, 100),
+        vec2(100, -100),
+        vec2(-100, -100),
+        vec2(-100, 100)
+};
 //vector<vec2> targets = {
 ////        vec2(0, 100),
 //        vec2(100, 100),
+//        vec2(100, 150),
+//        vec2(100, 200),
+//        vec2(100, 250),
+//        vec2(100, 300),
+//        vec2(100, 250),
+//        vec2(100, 200),
+//        vec2(100, 150)
+//};
+//vector<vec2> targets = {
+////        vec2(0, 100),
+//        vec2(50, 100),
 //        vec2(100, -100),
-//        vec2(-100, -100),
-//        vec2(-100, 100),
+//        vec2(150, -100),
+//        vec2(200, 100),
 //        vec2(0, 100),
 //        vec2(100, 0)
 //};
-vector<vec2> targets = {
-//        vec2(0, 100),
-        vec2(50, 100),
-        vec2(100, -100),
-        vec2(150, -100),
-        vec2(200, 100),
-        vec2(0, 100),
-        vec2(100, 0)
-};
 int index = 0;
 
 // 点位置数据
@@ -178,11 +187,19 @@ int main() {
         // 绑定vao
         glBindVertexArray(VAO);
         glBufferData(GL_ARRAY_BUFFER, sizeof(*data) * data_cnt * 3, data, GL_DYNAMIC_DRAW);
+
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *) 0);
         glEnableVertexAttribArray(0);
 
         glLineWidth(3);
+        glColorP4ui(2, 2);
+
+        shader.setVec3("color", glm::vec3(1.0f, 0.0f, 0.0f));
         glDrawArrays(GL_LINE_STRIP, 0, data_cnt);
+        shader.setVec3("color", glm::vec3(0.0f, 1.0f, 0.0f));
+
+        glPointSize(8);
+        glDrawArrays(GL_POINTS, 0, data_cnt);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -200,53 +217,31 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
 }
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
-    // make sure the viewport matches the new window dimensions; note that width and
-    // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
 
 void cursorPositionCallback(GLFWwindow *window, double x, double y) {
-//    printf("cursor position is (%f,%f)\n", x, y);
     cursor_pos_x = x;
     cursor_pos_y = y;
-//    target.x = cursor_pos_x - SCR_WIDTH / 2;
-//    target.y = -1.0f * (cursor_pos_y - SCR_HEIGHT / 2);
-//    joint.setTarget(target);
-//    joint.updateJoints();
+    cout << x << " " << y << endl;
+    target = vec2(x - SCR_WIDTH / 2, -1 * (y - SCR_HEIGHT / 2));
+    cout << "target:(" << target.x << "," << target.y << ")" << endl;
+    joint.setTarget(target);
+//    joint.updateJointsCCD();
+//    joint.updateJointsRCCD();
+//    joint.updateJointsCC();
+    joint.updateJointsMCD();
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
     if (action == GLFW_PRESS) {
         switch (button) {
             case GLFW_MOUSE_BUTTON_LEFT:
-                target = targets[(index++) % targets.size()];
-
-                cout << "target:(" << target.x << "," << target.y << ")" << endl;
-//                printf("mouse position is (%f,%f)\n", target.x, target.y);
-//                joint.setOneStep(100);
-//                joint.setTarget(target);
-////                joint.updateJointsCJD();
-//                joint.updateJointsCCJD();
-
-                joint.setOneStep(100);
-                joint.setTarget(target);
-//                joint.updateJointsCCD();
-//                joint.updateJointsCJD();
-                joint.updateJointsDP();
+                printf("you push left button.\n");
                 break;
             case GLFW_MOUSE_BUTTON_RIGHT:
-//                target = targets[(index++) % targets.size()];
-//                joint.setOneStep(100);
-//                joint.setTarget(target);
-//                joint.updateJointsCCD();
-                target = targets[(index) % targets.size()];
-                printf("mouse position is (%f,%f)\n", target.x, target.y);
-                joint.setOneStep(1);
-                joint.setTarget(target);
-                joint.updateJointsStep();
+                printf("you push right button.\n");
             default:
                 break;
         }
@@ -265,5 +260,4 @@ void updateVertices(Joint &joint) {
         data[i * 3 + 1] = vertices_[i].y;
         data[i * 3 + 2] = vertices_[i].z;
     }
-
-};
+}

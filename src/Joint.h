@@ -16,7 +16,7 @@ using namespace std;
 using namespace glm;
 
 // todo:: recode JointNode using theta
-
+// d
 struct JointNode {
     int id;
     vec2 origin;
@@ -29,6 +29,7 @@ struct JointNode {
     }
 };
 
+// 不同的算法只是下标顺序的不同
 class Joint {
 public:
     Joint() {};
@@ -37,6 +38,9 @@ public:
 
     // cyclic coordinate decent
     void updateJointsCCD();
+
+    // reverse cyclic coordinate decent
+    void updateJointsRCCD();
 
     // cyclic joints decent
     void updateJointsCJD();
@@ -48,8 +52,8 @@ public:
     // cyclic circulate
     void updateJointsCC();
 
-    // distance priority
-    void updateJointsDP();
+    // Monte Carlo coordinate decent
+    void updateJointsMCD();
 
     void updateJointsStep();
 
@@ -70,29 +74,45 @@ public:
             cout << "(" << joints_[i].origin.x << "," << joints_[i].origin.y << ")->";
         }
         cout << "(" << joints_.back().destination.x << "," << joints_.back().destination.y << ")" << endl;
+
+        cout << "Transfer Matrix:" << endl;
+        for (int i = 0; i < transfer_matrix_.size(); i++) {
+            for (int j = 0; j < transfer_matrix_[i].size(); j++) {
+                cout << transfer_matrix_[i][j] << " ";
+            }
+            cout << endl;
+        }
     }
 
 private:
-
-    float getTotalLength();
+    // update joints straight line
+    void updateJointsSL();
 
     vec2 getEnd();
 
-    void updateJoints(int ori_idx, float rotate_angle);
+    void rotateJoints(int ori_idx, float rotate_angle);
 
-    bool updateSingleJoint(int origin_index);
+    bool updateSingleJoint(int origin_index, float & rotate_angle);
+
+    vector<float> getCDF(int index);
 
 
     vector<JointNode> joints_;
     vector<float> joints_length_;
+
+    // 转移矩阵
+    vector<vector<float>> transfer_matrix_;
+
     vec2 origin_ = {0.0f, 0.0f};
     vec2 target_ = {0.0f, 0.0f};
 
     unsigned int screen_width_;
     unsigned int screen_height_;
 
-    int max_iterator_ = 100;   // 最大的迭代次数
+    int max_iterator_ = 300;   // 最大的迭代次数
     float threshold_ = 0.1;     // 容许误差范围
+
+    float total_length_ = 0.0f;
 
     int joint_index = 0;
 };

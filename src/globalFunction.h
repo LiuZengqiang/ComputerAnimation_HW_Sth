@@ -6,6 +6,7 @@
 #define OPENGLHELLOWORLD_GLOBALFUNCTION_H
 
 #include "glm/glm.hpp"
+#include <time.h>
 
 namespace global {
     using namespace glm;
@@ -31,6 +32,11 @@ namespace global {
         // 平移回来
         ret = ret + ori;
         return ret;
+    }
+
+    inline float getRand() {
+//        srand(time(0));
+        return rand() / (double(RAND_MAX));
     }
 }
 #endif //OPENGLHELLOWORLD_GLOBALFUNCTION_H
