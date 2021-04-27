@@ -2,6 +2,7 @@
 #include "src/Shader.h"
 #include "src/Joint.h"
 #include "glm/glm.hpp"
+#include "src/globalFunction.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
@@ -18,7 +19,8 @@ double cursor_pos_y = 0;
 
 vec2 target(0, 300);
 
-vector<float> joint_vec = {100, 100, 50, 50};
+vector<float> joint_length = {100, 100, 50, 50};
+vector<float> joint_angle = {global::Pi/2, 0.0f, 0.0f};
 vector<vec2> targets = {
         vec2(0, 200),
         vec2(100, 100),
@@ -32,7 +34,7 @@ int index = 0;
 float *data;
 int data_cnt = 4;
 
-Joint joint(joint_vec, SCR_WIDTH, SCR_HEIGHT);
+Joint joint(joint_length, joint_angle, SCR_WIDTH, SCR_HEIGHT);
 
 // frame buffer刷新回调函数
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
@@ -78,16 +80,16 @@ int main() {
 
     joint.debug();
 
-    data = new float[joint_vec.size() * 3];
+    data = new float[joint_length.size() * 3];
 
     vector<float> temp = {-0.5f, -0.5f, 0.0f,
                           0.5f, -0.5f, 0.0f,
                           0.0f, 0.5f, 0.0f};
 
-    for (int i = 0; i < joint_vec.size() * 3; i++) {
+    for (int i = 0; i < joint_length.size() * 3; i++) {
         data[i] = temp[i];
     }
-    data_cnt = joint_vec.size();
+    data_cnt = joint_length.size();
     // glfw: initialize and configure
     // ------------------------------
     // 初始化glfw，设置glfw版本3.3, 大版本号3，小版本号也是3，设置使用opengl_core模式
@@ -203,8 +205,9 @@ void cursorPositionCallback(GLFWwindow *window, double x, double y) {
     target = vec2(x - SCR_WIDTH / 2, -1 * (y - SCR_HEIGHT / 2));
     cout << "target:(" << target.x << "," << target.y << ")" << endl;
     joint.setTarget(target);
-    joint.updateJointsCCD();
-//    joint.updateJointsRCCD();
+//    joint.updateJointsCCD();
+//    joint.updateJointsCJD();
+    joint.updateJointsRCCD();
 //    joint.updateJointsCC();
 //    joint.updateJointsMCD();
 }

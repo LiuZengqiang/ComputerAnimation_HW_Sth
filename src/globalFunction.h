@@ -11,6 +11,7 @@
 namespace global {
     using namespace glm;
     const float Epsilon = 0.00001f;
+    const float Pi = 3.141592654f;
 
     inline float getDis(const vec2 &v2_1, const vec2 &v2_2) {
         return glm::length(v2_2 - v2_1);
@@ -20,7 +21,17 @@ namespace global {
         return glm::max(min_val, glm::min(val, max_val));
     }
 
+
+
+
     // 角度一律使用弧度
+    /**
+     * 点v2围绕ori旋转angle角度后的位置
+     * @param ori
+     * @param v2
+     * @param angle
+     * @return
+     */
     inline vec2 rotateVec2(const vec2 &ori, const vec2 &v2, const float &angle) {
         // 平移
         vec2 ret = v2 - ori;

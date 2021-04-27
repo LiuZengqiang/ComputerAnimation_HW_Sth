@@ -20,18 +20,16 @@ using namespace glm;
 struct JointNode {
 
     int id;
-
     float theta;
     float length;
 
+//    vec2 origin;
+//    vec2 destination;
 
-    vec2 origin;
-    vec2 destination;
+//    JointNode(int id, vec2 ori, vec2 des) : id(id), origin(ori), destination(des) {};
 
-    JointNode(int id, vec2 ori, vec2 des) : id(id), origin(ori), destination(des) {};
+    JointNode(int id, float length, float theta = 0.0f) : id(id), length(length), theta(theta) {};
 
-    JointNode(int id, float length, float theta) : id(id), length(length), theta(theta) {};
-    
 };
 
 // 不同的算法只是下标顺序的不同
@@ -39,7 +37,8 @@ class Joint {
 public:
     Joint() {};
 
-    Joint(const vector<float> &joints_length, unsigned int scr_width, unsigned int scr_height);
+    Joint(const vector<float> &joints_length, const vector<float> &joints_angle, unsigned int scr_width,
+          unsigned int scr_height);
 
     // cyclic coordinate decent
     void updateJointsCCD();
@@ -75,25 +74,27 @@ public:
     }
 
     void debug() {
-        for (int i = 0; i < joints_.size(); i++) {
-            cout << "(" << joints_[i].origin.x << "," << joints_[i].origin.y << ")->";
-        }
-        cout << "(" << joints_.back().destination.x << "," << joints_.back().destination.y << ")" << endl;
-
-        cout << "Transfer Matrix:" << endl;
-        for (int i = 0; i < transfer_matrix_.size(); i++) {
-            for (int j = 0; j < transfer_matrix_[i].size(); j++) {
-                cout << transfer_matrix_[i][j] << " ";
-            }
-            cout << endl;
-        }
+//        for (int i = 0; i < joints_.size(); i++) {
+//            cout << "(" << joints_[i].origin.x << "," << joints_[i].origin.y << ")->";
+//        }
+//        cout << "(" << joints_.back().destination.x << "," << joints_.back().destination.y << ")" << endl;
+//
+//        cout << "Transfer Matrix:" << endl;
+//        for (int i = 0; i < transfer_matrix_.size(); i++) {
+//            for (int j = 0; j < transfer_matrix_[i].size(); j++) {
+//                cout << transfer_matrix_[i][j] << " ";
+//            }
+//            cout << endl;
+//        }
     }
 
 private:
     // update joints straight line
     void updateJointsSL();
 
-    vec2 getEnd();
+    vec2 getEndVertex();
+
+    vec2 getIndexVertex(int index);
 
     void rotateJoints(int ori_idx, float rotate_angle);
 
@@ -104,6 +105,7 @@ private:
 
     vector<JointNode> joints_;
     vector<float> joints_length_;
+    vector<float> joints_angle_;
 
     // 转移矩阵
     vector<vector<float>> transfer_matrix_;
@@ -119,7 +121,6 @@ private:
 
     float total_length_ = 0.0f;
 
-    int joint_index = 0;
 };
 
 #endif //OPENGLHELLOWORLD_JOINT_H

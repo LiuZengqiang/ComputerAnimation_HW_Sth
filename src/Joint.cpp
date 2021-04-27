@@ -5,32 +5,34 @@
 #include "globalFunction.h"
 #include <iostream>
 
-Joint::Joint(const vector<float> &joints_length, unsigned int scr_width, unsigned int scr_height) {
+Joint::Joint(const vector<float> &joints_length, const vector<float> &joints_angle, unsigned int scr_width,
+             unsigned int scr_height) {
     screen_width_ = scr_width;
     screen_height_ = scr_height;
     joints_length_.assign(joints_length.begin(), joints_length.end());
-    vec2 pre(origin_);
-    vec2 dir(0.0f, 1.0f);
+    joints_angle_.assign(joints_angle.begin(), joints_angle.end());
+
     for (int i = 0; i < joints_length_.size(); i++) {
         total_length_ += joints_length_[i];
-        vec2 ori(pre);
-        joints_.push_back(JointNode(i, ori, ori + dir * joints_length[i]));
-        pre = vec2(pre + dir * joints_length[i]);
+        if (i < joints_angle.size()) {
+            joints_.push_back(JointNode(i, joints_length_[i], joints_angle_[i]));
+        } else {
+            joints_.push_back(JointNode(i, joints_length_[i], 0.0f));
+        }
     }
     transfer_matrix_.resize(joints_.size());
     for (int i = 0; i < transfer_matrix_.size(); i++) {
         transfer_matrix_[i] = getCDF(i);
     }
+    vec2 end = getEndVertex();
+    cout << "end:(" << end.x << "," << end.y << ")" << endl;
 }
 
 // cyclic coordinate decent
 // 4 3 2 1
 void Joint::updateJointsCCD() {
-    joint_index = 0;
-    // 不能达到 直接绘制一个直线
     if (global::getDis(target_, origin_) >= total_length_) {
         updateJointsSL();
-        // 可以到达，迭代计算
     } else {
         bool has_resolution = false;
         int i = 0;
@@ -53,79 +55,33 @@ void Joint::setTarget(const vec2 &target) {
 }
 
 void Joint::rotateJoints(int ori_idx, float rotate_angle) {
-    vec2 ori = joints_[ori_idx].origin;
-    vec2 pre_des = ori;
+
     for (int i = ori_idx; i < joints_.size(); i++) {
-        joints_[i].origin = pre_des;
-        joints_[i].destination = global::rotateVec2(ori, joints_[i].destination, rotate_angle);
-        pre_des = joints_[i].destination;
+        joints_[i].theta += rotate_angle;
     }
 }
 
 vector<vec3> Joint::getVertices() {
     vector<vec3> ret;
+
+    vec2 end_vertex(origin_);
+    ret.push_back(vec3(end_vertex, 0.0f));
+    float angle = 0.0f;
     for (int i = 0; i < joints_.size(); i++) {
-        ret.push_back(vec3(joints_[i].origin.x / screen_width_ * 2, joints_[i].origin.y / screen_height_ * 2, 0.0f));
-//        cout << "(" << joints_[i].origin.x << "," << joints_[i].origin.y << ")";
+        angle += joints_[i].theta;
+        vec2 vec(joints_[i].length, 0.0f);
+        vec = global::rotateVec2(vec2(0.0f, 0.0f), vec, angle);
+        end_vertex = end_vertex + vec;
+        ret.push_back(vec3((end_vertex.x * 2) / (screen_width_), (end_vertex.y * 2) / screen_height_, 0.0f));
     }
+//    for (int i = 0; i < ret.size(); i++) {
+//        cout << "(" << ret[i].x << "," << ret[i].y << ")";
+//    }
 //    cout << endl;
-    ret.push_back(
-            vec3(joints_.back().destination.x / screen_width_ * 2, joints_.back().destination.y / screen_height_ * 2,
-                 0.0f));
     return ret;
 }
 
-void Joint::updateJointsStep() {
-    // 不能达到 直接绘制一个直线
-    if (global::getDis(target_, origin_) >= total_length_) {
-        updateJointsSL();
-        // 可以到达，迭代计算
-    } else {
-
-        bool has_resolution = false;
-        int i = 0;
-        for (; i < max_iterator_ && has_resolution == false; i++) {
-            // 迭代各个关节
-            int j = joints_.size() - 1 - ((joint_index++) % joints_.size());
-            vec2 end_position = joints_.back().destination;
-            cout << "end_position:(" << end_position.x << "," << end_position.y << ")" << endl;
-
-            float end_target_dis = global::getDis(end_position, target_);
-            if (end_target_dis <= threshold_) {
-                has_resolution = true;
-                break;
-            }
-            vec2 ori_end = joints_.back().destination - joints_[j].origin;
-            cout << "j:" << j << endl;
-            cout << "ori_end:(" << ori_end.x << "," << ori_end.y << ")" << endl;
-            vec2 ori_target = target_ - joints_[j].origin;
-            cout << "target:(" << target_.x << "," << target_.y << ")" << endl;
-            cout << "ori_target:(" << ori_target.x << "," << ori_target.y << ")" << endl;
-            float cos = glm::dot(ori_end, ori_target) / (glm::length(ori_end) * glm::length(ori_target));
-            float sin = (ori_end.x * ori_target.y) - (ori_end.y * ori_target.x);
-            float rotate_angle = acos(global::clampFloat(cos));
-
-            if (sin < 0.0f) {
-                rotate_angle *= -1;
-            }
-            cout << "angle:" << rotate_angle * 180 / 3.141592654f << endl;
-            // todo:
-//            if (glm::dot(getEnd() - origin_, target_ - origin_) <= global::Epsilon) {
-//                rotate_angle /= 2.0f;
-////                    cout << "----- divide 2 -----" << endl;
-//            }
-//                rotate_angle /= 2.0f;
-            rotateJoints(j, rotate_angle);
-
-        }
-
-        cout << "iterator times:" << i << endl;
-    }
-
-}
-
 void Joint::updateJointsCJD() {
-    joint_index = 0;
     // 不能达到 直接绘制一个直线
     if (global::getDis(target_, origin_) >= total_length_) {
         updateJointsSL();
@@ -154,74 +110,15 @@ void Joint::updateJointsCJD() {
     }
 }
 
-// combine CCD and CJD
-//
-//void Joint::updateJointsCCJD() {
-//    joint_index = 0;
-//    // 不能达到 直接绘制一个直线
-//    if (global::getDis(target_, origin_) >= total_length_) {
-//        updateJointsSL();
-//        // 可以到达，迭代计算
-//    } else {
-//        int cnt = 0;
-//        bool has_resolution = false;
-//        // 每次迭代
-//        for (int i; i < max_iterator_ && has_resolution == false; i++) {
-//            // 迭代各个关节
-//            enum ROTATE_DIRECTION {
-//                CLOCKWISE,
-//                ANTICLOCKWISE,
-//                UNKNOWN
-//            } rotate_direction = ROTATE_DIRECTION::UNKNOWN;
-//
-//            for (int j = joints_.size() - 1; j >= 0 && has_resolution == false; j--) {
-//
-//                vec2 end_position = joints_.back().destination;
-//                float end_target_dis = global::getDis(end_position, target_);
-//                if (end_target_dis <= threshold_) {
-//                    has_resolution = true;
-//                    break;
-//                }
-//                vec2 ori_end = joints_.back().destination - joints_[j].origin;
-//
-//                vec2 ori_target = target_ - joints_[j].origin;
-//
-//                float cos = glm::dot(ori_end, ori_target) / (glm::length(ori_end) * glm::length(ori_target));
-//                float sin = (ori_end.x * ori_target.y) - (ori_end.y * ori_target.x);
-//                float rotate_angle = acos(global::clampFloat(cos));
-//
-//                if (sin < 0.0f) {
-//                    rotate_angle *= -1;
-//                }
-//                ROTATE_DIRECTION now_rotate_direction =
-//                        rotate_angle >= 0.0f ? ROTATE_DIRECTION::ANTICLOCKWISE : ROTATE_DIRECTION::ANTICLOCKWISE;
-//                if (rotate_direction == ROTATE_DIRECTION::UNKNOWN || rotate_direction == now_rotate_direction) {
-//                    rotate_direction = now_rotate_direction;
-//                    rotateJoints(j, rotate_angle);
-//                    cnt++;
-//                } else {
-//                    for (int k = j; k < joints_.size(); k++) {
-//
-//                        cnt++;
-//                        if (updateSingleJoint(k,)) {
-//                            has_resolution = true;
-//                            break;
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        cout << "iterator times:" << cnt << endl;
-//    }
-//}
-
 bool Joint::updateSingleJoint(int origin_index, float &rotate_angle) {
-
-    if (global::getDis(joints_.back().destination, target_) <= threshold_) {
+    vec2 end_vertex = getEndVertex();
+    if (global::getDis(end_vertex, target_) <= threshold_) {
         return true;
     }
-    vec2 ori_end = joints_.back().destination - joints_[origin_index].origin;
-    vec2 ori_target = target_ - joints_[origin_index].origin;
+    vec2 ori_vertex = getIndexVertex(origin_index);
+    vec2 ori_end = end_vertex - ori_vertex;
+    vec2 ori_target = target_ - ori_vertex;
+
     float cos = glm::dot(ori_end, ori_target) / (glm::length(ori_end) * glm::length(ori_target));
     float sin = (ori_end.x * ori_target.y) - (ori_end.y * ori_target.x);
     rotate_angle = acos(global::clampFloat(cos));
@@ -231,11 +128,11 @@ bool Joint::updateSingleJoint(int origin_index, float &rotate_angle) {
     if (abs(rotate_angle) <= global::Epsilon) {
         rotate_angle = global::Epsilon * 10;
     }
-    return global::getDis(joints_.back().destination, target_) <= threshold_;
+    end_vertex = getEndVertex();
+    return global::getDis(end_vertex, target_) <= threshold_;
 }
 
 void Joint::updateJointsCC() {
-    joint_index = 0;
     // 不能达到 直接绘制一个直线
     if (global::getDis(target_, origin_) >= total_length_) {
         updateJointsSL();
@@ -264,17 +161,32 @@ void Joint::updateJointsCC() {
 }
 
 void Joint::updateJointsSL() {
+
+//    float cos = glm::dot(ori_end, ori_target) / (glm::length(ori_end) * glm::length(ori_target));
+//    float sin = (ori_end.x * ori_target.y) - (ori_end.y * ori_target.x);
+//    rotate_angle = acos(global::clampFloat(cos));
+//    if (sin < 0.0f) {
+//        rotate_angle *= -1;
+//    }
+//    if (abs(rotate_angle) <= global::Epsilon) {
+//        rotate_angle = global::Epsilon * 10;
+//    }
+
     vec2 direction = glm::normalize(target_ - origin_);
-    vec2 ori = origin_;
-    for (int i = 0; i < joints_.size(); i++) {
-        joints_[i].origin = ori;
-        joints_[i].destination = direction * joints_length_[i] + ori;
-        ori = joints_[i].destination;
+    float cos = 1.0f * glm::dot(direction, glm::vec2(1.0f, 0.0f));
+    float sin = -1.0f * direction.y;
+    float theta = acos(global::clampFloat(cos));
+    if (sin > 0.0f) {
+        theta *= -1.0f;
+    }
+    joints_[0].theta = theta;
+
+    for (int i = 1; i < joints_.size(); i++) {
+        joints_[i].theta = 0.0f;
     }
 }
 
 void Joint::updateJointsMCD() {
-    joint_index = 0;
     if (global::getDis(target_, origin_) >= total_length_) {
         updateJointsSL();
     } else {
@@ -342,7 +254,6 @@ vector<float> Joint::getCDF(int index) {
 }
 
 void Joint::updateJointsRCCD() {
-    joint_index = 0;
     // 不能达到 直接绘制一个直线
     if (global::getDis(target_, origin_) >= total_length_) {
         updateJointsSL();
@@ -365,4 +276,25 @@ void Joint::updateJointsRCCD() {
         }
         cout << "iterator times:" << i << endl;
     }
+}
+
+vec2 Joint::getEndVertex() {
+    return getIndexVertex(joints_.size());
+}
+
+/**
+ * 返回第index个点，点的个数等于joints.size()+1
+ * @param index
+ * @return
+ */
+vec2 Joint::getIndexVertex(int index) {
+    vec2 ret_end(origin_);
+    float angle = 0.0f;
+    for (int i = 0; i < index; i++) {
+        angle += joints_[i].theta;
+        vec2 vec(joints_[i].length, 0.0f);
+        vec = global::rotateVec2(vec2(0.0f, 0.0f), vec, angle);
+        ret_end = ret_end + vec;
+    }
+    return ret_end;
 }
