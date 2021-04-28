@@ -47,6 +47,7 @@ public:
 
     Joint(int argc, char **argv, unsigned int scr_width, unsigned int scr_height) {
         if (argc <= 1) {
+            cout << "Using default parameter." << endl;
             vector<float> joint_length = {100, 100, 50, 50};
             vector<pair<float, float>> joint_angle_limit;
             construct(joint_length, joint_angle_limit, scr_width, scr_height);
