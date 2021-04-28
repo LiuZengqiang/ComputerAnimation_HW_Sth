@@ -8,8 +8,12 @@
 #include "globalFunction.h"
 #include "glad/glad.h"
 #include "glm/glm.hpp"
+
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <sstream>
+#include <string>
 
 
 using namespace std;
@@ -18,17 +22,16 @@ using namespace glm;
 struct JointNode {
 
     int id;
-    float theta;
+    float theta = 0.0f;
     //
     pair<float, float> theta_limit;
 
     float length;
 
-    JointNode(int id, float length, float theta = 0.0f,
-              pair<float, float> theta_limit = {global::Pi * (-1.0f), global::Pi})
-            :
-            id(id), length(length), theta(theta), theta_limit(theta_limit) {};
-
+    JointNode(int id, float length, pair<float, float> theta_limit = {global::Pi * (-1.0f), global::Pi}) : id(id),
+                                                                                                           length(length),
+                                                                                                           theta_limit(
+                                                                                                                   theta_limit) {};
 };
 
 enum class METHODS {
@@ -38,21 +41,82 @@ enum class METHODS {
     RCD
 };
 
-// 不同的算法只是下标顺序的不同
 class Joint {
 public:
     Joint() {};
 
-    Joint(const vector<float> &joints_length, const vector<float> &joints_angle, unsigned int scr_width,
-          unsigned int scr_height);
+    Joint(int argc, char **argv, unsigned int scr_width, unsigned int scr_height) {
+        if (argc <= 1) {
+            vector<float> joint_length = {100, 100, 50, 50};
+            vector<pair<float, float>> joint_angle_limit;
+            construct(joint_length, joint_angle_limit, scr_width, scr_height);
+        } else {
+            string input_file_path = argv[1];
+            cout << input_file_path << endl;
+
+            fstream input_file(input_file_path, fstream::in);
+            if (!input_file.good()) {
+                cerr << "Can't open file: " << input_file_path
+                     << ". Please put the file in the directory with .exe file." << endl;
+                return;
+            }
+            vector<float> joint_length;
+            vector<pair<float, float>> joint_angle;
+            stringstream ss;
+            ss << input_file.rdbuf();
+            string str;
+            enum STATE {
+                LENGTH,
+                LIMIT,
+                NOTHING
+            } state = STATE::NOTHING;
+
+            int line_cnt = 0;
+            while (getline(ss, str)) {
+                line_cnt++;
+                if (str == "length:") {
+                    state = STATE::LENGTH;
+                } else if (str == "limit:") {
+                    state = STATE::LIMIT;
+                } else {
+                    vector<float> nums;
+                    vector<string> subStr = split(str, ' ');
+                    for (int i = 0; i < subStr.size(); i++) {
+                        nums.push_back(atof(subStr[i].c_str()));
+                    }
+                    cout << "nums:";
+                    for (int i = 0; i < nums.size(); i++) {
+                        cout << nums[i] << " ";
+                    }
+                    cout << endl;
+                    if (state == STATE::LENGTH) {
+                        joint_length.insert(joint_length.end(), nums.begin(), nums.end());
+                    } else if (state == STATE::LIMIT) {
+                        joint_angle.push_back(
+                                pair<float, float>(nums[0] / 180.0f * global::Pi, nums[1] / 180.0f * global::Pi));
+                    } else { ;
+                    }
+                }
+            }
+            construct(joint_length, joint_angle, scr_width, scr_height);
+        }
+    }
 
     void updateJoints(METHODS method);
+
+    int getVerticesSize();
+
+    void setScreenSize(unsigned int scr_width, unsigned int scr_height);
 
     vector<vec3> getVertices();
 
     void setTarget(const vec2 &target);
 
 private:
+    void construct(const vector<float> &joints_length, const vector<pair<float, float>> &joints_angle_limit,
+                   unsigned int scr_width,
+                   unsigned int scr_height);
+
     // cyclic coordinate decent
     int updateJointsCCD();
 
@@ -78,10 +142,30 @@ private:
 
     vector<float> getCDF(int index);
 
+    vector<string> split(string str, char ch) {
+        vector<string> ret;
+        int left = 0;
+        int right = 0;
+        while (left < str.length() && right < str.length()) {
+            while (left < str.length() && str[left] == ch) {
+                left++;
+            }
+            right = left;
+            while (right < str.length() && str[right] != ch) {
+                right++;
+            }
+            if (left < right) {
+                ret.push_back(str.substr(left, right - left));
+            }
+            left = right;
+        }
+        return ret;
+    };
+
 
     vector<JointNode> joints_;
     vector<float> joints_length_;
-    vector<float> joints_angle_;
+    vector<pair<float, float>> joints_angle_limit_;
 
     // 转移矩阵
     vector<vector<float>> transfer_matrix_;

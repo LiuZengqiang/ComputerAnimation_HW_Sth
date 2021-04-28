@@ -8,30 +8,23 @@
 #include <stdio.h>
 #include <iostream>
 
-// settings
-// 窗口宽高
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+unsigned int SCR_WIDTH = 800;
+unsigned int SCR_HEIGHT = 600;
 
 vec2 target(0, 300);
-
+//int index = 0;
 METHODS method = METHODS::CCD;
-
-vector<float> joint_length = {100, 100, 50, 50};
-vector<float> joint_angle = {global::Pi / 2, 0.0f, 0.0f};
-
+//
+//
 //vector<vec2> targets = {
-//        vec2(0, 200),
-//        vec2(100, 100),
 //        vec2(100, -100),
 //        vec2(-100, -100),
-//        vec2(-100, 100)
+//        vec2(-100, 100),
+//        vec2(100, 100)
 //};
-// 点位置数据
 float *data;
-int data_cnt = 4;
-
-Joint joint(joint_length, joint_angle, SCR_WIDTH, SCR_HEIGHT);
+int data_cnt;
+Joint *joint;
 
 // frame buffer刷新回调函数
 void framebufferSizeCallback(GLFWwindow *window, int width, int height);
@@ -45,21 +38,14 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
 // 输入回调函数
 void processInput(GLFWwindow *window);
 
-void updateVertices(Joint &joint);
+void updateVertices(Joint *joint);
 
-int main() {
+int main(int argc, char **argv) {
 
+    joint = new Joint(argc, argv, SCR_WIDTH, SCR_HEIGHT);
 
-    data = new float[joint_length.size() * 3];
-
-    vector<float> temp = {-0.5f, -0.5f, 0.0f,
-                          0.5f, -0.5f, 0.0f,
-                          0.0f, 0.5f, 0.0f};
-
-    for (int i = 0; i < joint_length.size() * 3; i++) {
-        data[i] = temp[i];
-    }
-    data_cnt = joint_length.size();
+    data = new float[joint->getVerticesSize() * 3];
+    data_cnt = joint->getVerticesSize();
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -72,7 +58,7 @@ int main() {
     // glfw window creation
     // --------------------
     // 生成窗口window，GLFWwindow* window
-    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "CCD", NULL, NULL);
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -116,6 +102,7 @@ int main() {
     glBindVertexArray(0);
 
     while (!glfwWindowShouldClose(window)) {
+
         updateVertices(joint);
 
         processInput(window);
@@ -160,22 +147,27 @@ void processInput(GLFWwindow *window) {
 
 void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
+    SCR_WIDTH = width;
+    SCR_HEIGHT = height;
+    joint->setScreenSize(width, height);
 }
 
 void cursorPositionCallback(GLFWwindow *window, double x, double y) {
     target = vec2(x - SCR_WIDTH / 2, -1 * (y - SCR_HEIGHT / 2));
-    joint.setTarget(target);
-    joint.updateJoints(method);
+    joint->setTarget(target);
+    joint->updateJoints(method);
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
     if (action == GLFW_PRESS) {
         switch (button) {
             case GLFW_MOUSE_BUTTON_LEFT:
-                printf("you push left button.\n");
+//                target = targets[(index++) % targets.size()];
+//                joint->setTarget(target);
+//                joint->updateJoints(method);
                 break;
             case GLFW_MOUSE_BUTTON_RIGHT:
-                printf("you push right button.\n");
+//                printf("you push right button.\n");
             default:
                 break;
         }
@@ -183,9 +175,9 @@ void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
 }
 
 // todo::update vertices
-void updateVertices(Joint &joint) {
+void updateVertices(Joint *joint) {
     delete[] data;
-    vector<vec3> vertices_ = joint.getVertices();
+    vector<vec3> vertices_ = joint->getVertices();
     data_cnt = vertices_.size();
     data = new float[vertices_.size() * 3];
 
@@ -207,14 +199,6 @@ void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods
                 cout << "Switch to CJD():" << endl;
                 break;
             case METHODS::CJD:
-                method = METHODS::CC;
-                cout << "Switch to CC():" << endl;
-                break;
-            case METHODS::CC:
-                method = METHODS::RCD;
-                cout << "Switch to RCD():" << endl;
-                break;
-            case METHODS::RCD:
                 method = METHODS::CCD;
                 cout << "Switch to CCD():" << endl;
                 break;

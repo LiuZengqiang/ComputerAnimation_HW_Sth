@@ -5,19 +5,21 @@
 #include "globalFunction.h"
 #include <iostream>
 
-Joint::Joint(const vector<float> &joints_length, const vector<float> &joints_angle, unsigned int scr_width,
-             unsigned int scr_height) {
+void Joint::construct(const vector<float> &joints_length, const vector<pair<float, float>> &joints_angle_limit,
+                      unsigned int scr_width,
+                      unsigned int scr_height) {
     screen_width_ = scr_width;
     screen_height_ = scr_height;
     joints_length_.assign(joints_length.begin(), joints_length.end());
-    joints_angle_.assign(joints_angle.begin(), joints_angle.end());
+    joints_angle_limit_.assign(joints_angle_limit.begin(), joints_angle_limit.end());
+
 
     for (int i = 0; i < joints_length_.size(); i++) {
         total_length_ += joints_length_[i];
-        if (i < joints_angle.size()) {
-            joints_.push_back(JointNode(i, joints_length_[i], joints_angle_[i]));
+        if (i < joints_angle_limit_.size()) {
+            joints_.push_back(JointNode(i, joints_length_[i], joints_angle_limit_[i]));
         } else {
-            joints_.push_back(JointNode(i, joints_length_[i], 0.0f));
+            joints_.push_back(JointNode(i, joints_length_[i]));
         }
     }
     transfer_matrix_.resize(joints_.size());
@@ -125,10 +127,11 @@ void Joint::updateSingleJoint(int origin_index, float &rotate_angle) {
     }
 
     if (abs(rotate_angle) <= global::Epsilon) {
-        rotate_angle = global::Epsilon * 10;
+        rotate_angle = global::Epsilon * 100;
     }
 }
 
+// 4 3 2 1 2 3
 int Joint::updateJointsCC() {
     if (global::getDis(target_, origin_) >= total_length_) {
         updateJointsSL();
@@ -285,3 +288,11 @@ void Joint::updateJoints(METHODS method) {
     }
 }
 
+int Joint::getVerticesSize() {
+    return joints_.size();
+}
+
+void Joint::setScreenSize(unsigned int scr_width, unsigned int scr_height) {
+    screen_width_ = scr_width;
+    screen_height_ = scr_height;
+}
