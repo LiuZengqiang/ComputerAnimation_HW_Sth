@@ -45,62 +45,58 @@ class Joint {
 public:
     Joint() {};
 
-    Joint(int argc, char **argv, unsigned int scr_width, unsigned int scr_height) {
-        if (argc <= 1) {
+    Joint(unsigned int scr_width, unsigned int scr_height) {
+
+        string input_file_path = "input.txt";
+        fstream input_file(input_file_path, fstream::in);
+        if (!input_file.good()) {
             cout << "Using default parameter." << endl;
             vector<float> joint_length = {100, 100, 50, 50};
             vector<pair<float, float>> joint_angle_limit;
             construct(joint_length, joint_angle_limit, scr_width, scr_height);
-        } else {
-            string input_file_path = argv[1];
-            cout << input_file_path << endl;
+            return;
+        }
+        cout << "Using input file parameter." << endl;
+        vector<float> joint_length;
+        vector<pair<float, float>> joint_angle;
+        stringstream ss;
+        ss << input_file.rdbuf();
+        string str;
+        enum STATE {
+            LENGTH,
+            LIMIT,
+            NOTHING
+        } state = STATE::NOTHING;
 
-            fstream input_file(input_file_path, fstream::in);
-            if (!input_file.good()) {
-                cerr << "Can't open file: " << input_file_path
-                     << ". Please put the file in the directory with .exe file." << endl;
-                return;
-            }
-            vector<float> joint_length;
-            vector<pair<float, float>> joint_angle;
-            stringstream ss;
-            ss << input_file.rdbuf();
-            string str;
-            enum STATE {
-                LENGTH,
-                LIMIT,
-                NOTHING
-            } state = STATE::NOTHING;
-
-            int line_cnt = 0;
-            while (getline(ss, str)) {
-                line_cnt++;
-                if (str == "length:") {
-                    state = STATE::LENGTH;
-                } else if (str == "limit:") {
-                    state = STATE::LIMIT;
-                } else {
-                    vector<float> nums;
-                    vector<string> subStr = split(str, ' ');
-                    for (int i = 0; i < subStr.size(); i++) {
-                        nums.push_back(atof(subStr[i].c_str()));
-                    }
-                    cout << "nums:";
-                    for (int i = 0; i < nums.size(); i++) {
-                        cout << nums[i] << " ";
-                    }
-                    cout << endl;
-                    if (state == STATE::LENGTH) {
-                        joint_length.insert(joint_length.end(), nums.begin(), nums.end());
-                    } else if (state == STATE::LIMIT) {
-                        joint_angle.push_back(
-                                pair<float, float>(nums[0] / 180.0f * global::Pi, nums[1] / 180.0f * global::Pi));
-                    } else { ;
-                    }
+        int line_cnt = 0;
+        while (getline(ss, str)) {
+            line_cnt++;
+            if (str == "length:") {
+                state = STATE::LENGTH;
+            } else if (str == "limit:") {
+                state = STATE::LIMIT;
+            } else {
+                vector<float> nums;
+                vector<string> subStr = split(str, ' ');
+                for (int i = 0; i < subStr.size(); i++) {
+                    nums.push_back(atof(subStr[i].c_str()));
+                }
+//                cout << "nums:";
+//                for (int i = 0; i < nums.size(); i++) {
+//                    cout << nums[i] << " ";
+//                }
+//                cout << endl;
+                if (state == STATE::LENGTH) {
+                    joint_length.insert(joint_length.end(), nums.begin(), nums.end());
+                } else if (state == STATE::LIMIT) {
+                    joint_angle.push_back(
+                            pair<float, float>(nums[0] / 180.0f * global::Pi, nums[1] / 180.0f * global::Pi));
+                } else { ;
                 }
             }
-            construct(joint_length, joint_angle, scr_width, scr_height);
         }
+        construct(joint_length, joint_angle, scr_width, scr_height);
+
     }
 
     void updateJoints(METHODS method);

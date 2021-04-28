@@ -42,7 +42,7 @@ void updateVertices(Joint *joint);
 
 int main(int argc, char **argv) {
 
-    joint = new Joint(argc, argv, SCR_WIDTH, SCR_HEIGHT);
+    joint = new Joint(SCR_WIDTH, SCR_HEIGHT);
 
     data = new float[joint->getVerticesSize() * 3];
     data_cnt = joint->getVerticesSize();
