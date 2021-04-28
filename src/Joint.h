@@ -15,21 +15,27 @@
 using namespace std;
 using namespace glm;
 
-// todo:: recode JointNode using theta
-// d
 struct JointNode {
 
     int id;
     float theta;
+    //
+    pair<float, float> theta_limit;
+
     float length;
 
-//    vec2 origin;
-//    vec2 destination;
+    JointNode(int id, float length, float theta = 0.0f,
+              pair<float, float> theta_limit = {global::Pi * (-1.0f), global::Pi})
+            :
+            id(id), length(length), theta(theta), theta_limit(theta_limit) {};
 
-//    JointNode(int id, vec2 ori, vec2 des) : id(id), origin(ori), destination(des) {};
+};
 
-    JointNode(int id, float length, float theta = 0.0f) : id(id), length(length), theta(theta) {};
-
+enum class METHODS {
+    CCD,
+    CJD,
+    CC,
+    RCD
 };
 
 // 不同的算法只是下标顺序的不同
@@ -40,55 +46,25 @@ public:
     Joint(const vector<float> &joints_length, const vector<float> &joints_angle, unsigned int scr_width,
           unsigned int scr_height);
 
-    // cyclic coordinate decent
-    void updateJointsCCD();
-
-    // reverse cyclic coordinate decent
-    void updateJointsRCCD();
-
-    // cyclic joints decent
-    void updateJointsCJD();
-
-    // combine CCD and CJD
-    // todo: fix bug
-    void updateJointsCCJD();
-
-    // cyclic circulate
-    void updateJointsCC();
-
-    // Monte Carlo coordinate decent
-    void updateJointsMCD();
-
-    void updateJointsStep();
-
-    vector<JointNode> getKeyVertex();
+    void updateJoints(METHODS method);
 
     vector<vec3> getVertices();
 
-    void setOrigin(const vec2 &origin);
-
     void setTarget(const vec2 &target);
 
-    void setOneStep(int n) {
-        max_iterator_ = n;
-    }
-
-    void debug() {
-//        for (int i = 0; i < joints_.size(); i++) {
-//            cout << "(" << joints_[i].origin.x << "," << joints_[i].origin.y << ")->";
-//        }
-//        cout << "(" << joints_.back().destination.x << "," << joints_.back().destination.y << ")" << endl;
-//
-//        cout << "Transfer Matrix:" << endl;
-//        for (int i = 0; i < transfer_matrix_.size(); i++) {
-//            for (int j = 0; j < transfer_matrix_[i].size(); j++) {
-//                cout << transfer_matrix_[i][j] << " ";
-//            }
-//            cout << endl;
-//        }
-    }
-
 private:
+    // cyclic coordinate decent
+    int updateJointsCCD();
+
+    // cyclic joints decent
+    int updateJointsCJD();
+
+    // cyclic circulate
+    int updateJointsCC();
+
+    // Random coordinate decent
+    int updateJointsRCD();
+
     // update joints straight line
     void updateJointsSL();
 
@@ -98,7 +74,7 @@ private:
 
     void rotateJoints(int ori_idx, float rotate_angle);
 
-    bool updateSingleJoint(int origin_index, float &rotate_angle);
+    void updateSingleJoint(int origin_index, float &rotate_angle);
 
     vector<float> getCDF(int index);
 

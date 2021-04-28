@@ -7,29 +7,26 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 #include <iostream>
-#include "src/glClass.h"
 
 // settings
 // 窗口宽高
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-double cursor_pos_x = 0;
-double cursor_pos_y = 0;
-
 vec2 target(0, 300);
 
-vector<float> joint_length = {100, 100, 50, 50};
-vector<float> joint_angle = {global::Pi/2, 0.0f, 0.0f};
-vector<vec2> targets = {
-        vec2(0, 200),
-        vec2(100, 100),
-        vec2(100, -100),
-        vec2(-100, -100),
-        vec2(-100, 100)
-};
-int index = 0;
+METHODS method = METHODS::CCD;
 
+vector<float> joint_length = {100, 100, 50, 50};
+vector<float> joint_angle = {global::Pi / 2, 0.0f, 0.0f};
+
+//vector<vec2> targets = {
+//        vec2(0, 200),
+//        vec2(100, 100),
+//        vec2(100, -100),
+//        vec2(-100, -100),
+//        vec2(-100, 100)
+//};
 // 点位置数据
 float *data;
 int data_cnt = 4;
@@ -43,42 +40,15 @@ void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
 void cursorPositionCallback(GLFWwindow *window, double x, double y);
 
+void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
 // 输入回调函数
 void processInput(GLFWwindow *window);
 
 void updateVertices(Joint &joint);
 
-
-// vertex shader程序
-// 点着色程序
-// 程序版本 version 330 core
-// 第一个uniform 变量 aPos
-// main()函数
-// 设置gl_Position = aPos
-const char *vertexShaderSource = "#version 330 core\n"
-                                 "layout (location = 0) in vec3 aPos;\n"
-                                 "void main()\n"
-                                 "{\n"
-                                 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-                                 "}\0";
-
-// fragment shader程序
-// 段着色程序
-// 程序版本 version 330 core
-// 输出(out)变量 FragColor
-// main()函数
-// 初始化FragColor
-const char *fragmentShaderSource = "#version 330 core\n"
-                                   "out vec4 FragColor;\n"
-                                   "void main()\n"
-                                   "{\n"
-                                   "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-                                   "}\n\0";
-
 int main() {
 
-
-    joint.debug();
 
     data = new float[joint_length.size() * 3];
 
@@ -90,9 +60,6 @@ int main() {
         data[i] = temp[i];
     }
     data_cnt = joint_length.size();
-    // glfw: initialize and configure
-    // ------------------------------
-    // 初始化glfw，设置glfw版本3.3, 大版本号3，小版本号也是3，设置使用opengl_core模式
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -113,14 +80,11 @@ int main() {
     }
     // 设置上下文为新生成的window
     glfwMakeContextCurrent(window);
-    // 设置window的framebuffer回调函数
     glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetCursorPosCallback(window, cursorPositionCallback);
+    glfwSetKeyCallback(window, keyCallback);
 
-    // glad: load all OpenGL function pointers
-    // ---------------------------------------
-    // glad用于加载opengl的函数指针
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -199,17 +163,9 @@ void framebufferSizeCallback(GLFWwindow *window, int width, int height) {
 }
 
 void cursorPositionCallback(GLFWwindow *window, double x, double y) {
-    cursor_pos_x = x;
-    cursor_pos_y = y;
-    cout << x << " " << y << endl;
     target = vec2(x - SCR_WIDTH / 2, -1 * (y - SCR_HEIGHT / 2));
-    cout << "target:(" << target.x << "," << target.y << ")" << endl;
     joint.setTarget(target);
-//    joint.updateJointsCCD();
-//    joint.updateJointsCJD();
-    joint.updateJointsRCCD();
-//    joint.updateJointsCC();
-//    joint.updateJointsMCD();
+    joint.updateJoints(method);
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
@@ -239,3 +195,34 @@ void updateVertices(Joint &joint) {
         data[i * 3 + 2] = vertices_[i].z;
     }
 }
+
+void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
+    if (action != GLFW_PRESS)
+        return;
+
+    if (key == GLFW_KEY_SPACE) {
+        switch (method) {
+            case METHODS::CCD:
+                method = METHODS::CJD;
+                cout << "Switch to CJD():" << endl;
+                break;
+            case METHODS::CJD:
+                method = METHODS::CC;
+                cout << "Switch to CC():" << endl;
+                break;
+            case METHODS::CC:
+                method = METHODS::RCD;
+                cout << "Switch to RCD():" << endl;
+                break;
+            case METHODS::RCD:
+                method = METHODS::CCD;
+                cout << "Switch to CCD():" << endl;
+                break;
+            default:
+                method = METHODS::CCD;
+                cout << "Switch to CCD():" << endl;
+                break;
+        }
+    }
+}
+

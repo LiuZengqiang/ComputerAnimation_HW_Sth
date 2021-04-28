@@ -21,9 +21,19 @@ namespace global {
         return glm::max(min_val, glm::min(val, max_val));
     }
 
-
-
-
+    /**
+     * 角度应该在[-Pi,Pi]范围内
+     * @return
+     */
+    inline float clampAngel(const float &angle) {
+        if (angle >= -Pi && angle <= Pi) {
+            return angle;
+        } else if (angle < -Pi) {
+            return angle + 2 * Pi;
+        } else {
+            return angle - 2 * Pi;
+        }
+    }
     // 角度一律使用弧度
     /**
      * 点v2围绕ori旋转angle角度后的位置
